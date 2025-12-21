@@ -3,7 +3,7 @@
 #
 
 # Set up fzf
-[ -f $HOME/.config/fzf/fzf.bash ] && source $HOME/.config/fzf/fzf.bash
+[ -f $HOME/.fzf.bash ] && source $HOME/.fzf.bash
 
 # Use fd instead of find
 export FZF_DEFAULT_COMMAND='fd --type f'

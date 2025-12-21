@@ -1,5 +1,8 @@
-# If not running interactively, don't do anything.
-[[ -z $PS1 ]] && return
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+      *) return;;
+esac
 
 # Source global definitions
 [ -f /etc/bashrc ] && . /etc/bashrc
@@ -67,9 +70,9 @@ else
 fi
 
 export PYENV_ROOT=$HOME/.local/opt/pyenv
-eval "$(~/.local/opt/bin/pyenv init --path)"
-eval "$(~/.local/opt/bin/pyenv init -)"
-export PIPX_DEFAULT_PYTHON=$(~/.local/opt/bin/pyenv which python)
+# eval "$(pyenv init --path)"
+eval "$(pyenv init - bash)"
+export PIPX_DEFAULT_PYTHON=$(pyenv which python)
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm

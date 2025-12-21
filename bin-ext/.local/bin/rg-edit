@@ -1,0 +1,2 @@
+#!/bin/sh
+exec rg --vimgrep "${@}" | nvim -q - -c copen

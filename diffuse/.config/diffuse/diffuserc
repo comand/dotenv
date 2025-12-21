@@ -1,0 +1,6 @@
+keybinding menu first-difference Ctrl+Shift+1
+keybinding menu previous-difference Ctrl+1
+keybinding menu next-difference Ctrl+2
+keybinding menu last-difference Ctrl+Shift+2
+keybinding menu copy-left-into-selection Ctrl+Alt+Right
+keybinding menu copy-right-into-selection Ctrl+Alt+Left

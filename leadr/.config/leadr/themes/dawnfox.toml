@@ -1,0 +1,6 @@
+accent = { r = 255, g = 255, b = 0 }
+background = { r = 250, g = 244, b = 237 }
+text_highlight_primary = { r = 208, g = 216, b = 216 }
+text_highlight_secondary = { r = 208, g = 216, b = 216 }
+text_primary = { r = 87, g = 82, b = 121 }
+text_secondary = { r = 87, g = 82, b = 121 }

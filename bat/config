@@ -1,0 +1,4 @@
+--theme="Monokai Extended Light"
+--pager="less -FR"
+--map-syntax h:cpp
+--style="numbers,changes"

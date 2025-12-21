@@ -1,0 +1,84 @@
+[user]
+    name = Cory Omand
+    email = coryomand@gmail.com
+[branch]
+    sort = -committerdate
+[tag]
+    sort = version:refname
+[init]
+    defaultBranch = main
+[push]
+    default = simple
+    autoSetupRemote = true
+    followTags = true
+[fetch]
+    prune = true
+    pruneTags = true
+    all = true
+[pull]
+    rebase = true
+[rebase]
+    autoStash = true
+    updateRefs = true
+    autoSquash = true
+[commit]
+    verbose = true
+[core]
+    pager = delta
+    editor = nvim
+[rerere]
+    enabled = true
+    autoupdate = true
+[diff]
+	tool = nvimdiff
+    guitool = diffuse
+    colorMoved = plain
+    algorithm = histogram
+    submodule = log
+    renames = true
+[merge]
+    tool = nvimdiff
+    conflictstyle = zdiff3
+[mergetool]
+    prompt = true
+[difftool "nvimdiff"]
+    cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+[interactive]
+    diffFilter = delta --color-only
+[delta]
+    navigate = true
+    side-by-side = true
+[gui]
+    editor = neovide
+    historybrowser = gitk
+	diffcontext = 10
+[cola]
+    spellcheck = false
+    theme = flat-light-blue
+    icontheme = light
+    fontdiff = CommitMono,11,-1,5,50,0,0,0,0,0
+    tabwidth = 4
+    expandtab = true
+[alias]
+    st = status -sb
+    ll = log --pretty=format:"%h%x09%an%x09%aD%x09%s" --no-merges -n 10
+    lt = log --pretty=format:"%h%x09%an%x09%aD%x09%s" --no-merges -n 10 .
+    last = log -1 HEAD --stat
+    rv = remote -v
+    dv = difftool -t diffuse -y
+    gl = config --global -l
+    dm = delete-merged-branches
+    fixup = "!git log -n 50 --pretty=format:'%h %s' --no-merges | fzf | cut -c -7 | xargs -o git commit --fixup"
+    modified = show --pretty="" --name-only --diff-filter=AM
+    staged = diff --name-only --cached --diff-filter=AM
+    grepa = "!f() { git grep --full-name $1 $(git rev-list --all); }; f"
+    devup = !git fetch origin dev:dev && git rebase dev && git status
+[status]
+    submoduleSummary = true
+[submodule]
+    recurse = true
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f

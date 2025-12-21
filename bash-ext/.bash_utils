@@ -1,0 +1,94 @@
+#!/bin/bash
+
+function _pathvar_append {
+    var=$1
+    shift
+    for p in "$@"; do
+        if [[ -d $p ]]; then
+            eval $var=\$$var:${p%%*(/)}
+        fi
+    done
+}
+
+function _pathvar_prepend {
+    for ((i=$#-1; i>=1; i--)); do
+        p=${!i}
+        if [[ -d $p ]]; then
+            eval "$1=${p%%*(/)}:\$$1"
+        fi
+    done
+}
+
+function _array_join {
+    local IFS="$1"
+    shift;
+    echo "$*"
+}
+
+function _path_remove {
+    local IFS=:
+    local pathvar
+    set -f
+    pathvar=( $PATH )
+    set +f
+
+    newpath=()
+    for p in "${pathvar[@]}"
+    do
+        keep=true
+        for rmp in "$@"
+        do
+            if [[ $p =~ $rmp ]]; then
+                keep=false
+                break
+            fi
+        done
+        if $keep; then
+            newpath+=($p)
+        fi
+    done
+
+    echo "${newpath[@]}"
+}
+
+function dedupe_pathvar {
+    PATH=$(echo $PATH | perl -ne '
+    %seen;
+    @path;
+    foreach $i (split /:/, $_) {
+        if (not exists $seen{$i}) {
+            push @path, $i if $i;
+            $seen{$i} = 1;
+        }
+    }
+    print join ":", @path;
+    ')
+}
+
+function _pathvar_print {
+    eval echo \$$1 | sed -e 's,:,\n,g'
+}
+
+function cdpath_append {
+    _pathvar_append CDPATH "$@"
+}
+
+function path_append {
+    _pathvar_append PATH "$@"
+}
+
+function path_prepend {
+    _pathvar_prepend PATH "$@"
+}
+
+function path_remove {
+    PATH=$(_array_join : $(_path_remove "$@"))
+}
+
+function cdpath {
+    _pathvar_print CDPATH
+}
+
+function path {
+    _pathvar_print PATH
+}

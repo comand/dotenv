@@ -10,6 +10,7 @@ end
 config.color_scheme = 'dawnfox'
 config.term = 'wezterm'
 config.front_end = 'WebGpu'
+config.enable_wayland = false
 
 config.font = wezterm.font_with_fallback {
   'CommitMono', 'Symbols Nerd Font Mono'

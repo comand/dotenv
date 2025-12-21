@@ -26,8 +26,13 @@ config.audible_bell = 'Disabled'
 config.exit_behavior = 'Close'
 config.clean_exit_codes = {130}
 
-config.initial_rows = 60
-config.initial_cols = 200
+wezterm.on('gui-startup', function(cmd)
+  local _, _, window = wezterm.mux.spawn_window(cmd or {})
+  local active = wezterm.gui.screens()['active']
+  window:gui_window():set_inner_size(
+    active['width'] * .75,
+    active['height'] * .75)
+end)
 
 wezterm.on("trigger-vim-with-scrollback", function(window, pane)
   -- Retrieve the current viewport's text.

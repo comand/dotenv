@@ -13,7 +13,10 @@ config.front_end = 'WebGpu'
 config.enable_wayland = false
 
 config.font = wezterm.font_with_fallback {
-  'CommitMono', 'Symbols Nerd Font Mono'
+  'CommitMono',
+  { family = 'Noto Sans Symbols' },
+  { family = 'Noto Sans Symbols2' },
+  { family = 'Symbols Nerd Font Mono' },
 }
 config.font_size = 10.5
 config.warn_about_missing_glyphs = false

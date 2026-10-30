@@ -96,7 +96,7 @@ config.keys = {
     action = wezterm.action.SpawnTab 'CurrentPaneDomain'
   },
   {
-    key='o', mods='CTRL',
+    key='o', mods='CTRL|SHIFT',
     action=wezterm.action.EmitEvent 'trigger-vim-with-scrollback'
   },
   {

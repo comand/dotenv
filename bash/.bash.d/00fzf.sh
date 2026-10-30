@@ -6,7 +6,7 @@
 [ -f $HOME/.fzf.bash ] && source $HOME/.fzf.bash
 
 # Use fd instead of find
-export FZF_DEFAULT_COMMAND='fd --type f'
+export FZF_DEFAULT_COMMAND="fd -tf -tl"
 
 # Solarized Light Modified
 export FZF_DEFAULT_OPTS='
@@ -35,15 +35,21 @@ export FZF_CTRL_R_OPTS="$FZF_WIDGET_ARGS --info=right --exact"
 
 # Open the matched file in VISUAL editor.
 fzf-preview() {
-    fzf $FZF_WIDGET_ARGS "$@" --preview '[[ $(file --mime {}) =~ binary ]] &&
-        echo {} is a binary file || (bat --style=numbers --color=always {} || cat {}) 2>/dev/null | head -500'
+    # shellcheck disable=SC2016
+    local preview='
+        [[ $(file --mime {}) =~ binary ]] && echo {} is a binary file \
+            || (bat --style=numbers --color=always {} \
+            || cat {}) 2>/dev/null | head -500'
+    fzf $FZF_WIDGET_ARGS "$@" --preview "$preview"
 }
 
 fzf-edit() {
-    editfiles=$(fzf-preview -m)
-    if [[ -n $editfiles ]]; then
-        history -s $VISUAL $editfiles
-        $VISUAL $editfiles
+    local editfiles
+    mapfile -t editfiles < <(fzf-preview -m)
+    if [[ ${#editfiles[@]} -gt 0 ]]; then
+        printf -v line '%q ' "${editfiles[@]}"
+        history -s "$VISUAL $line"
+        $VISUAL "${editfiles[@]}"
     fi
 }
 
@@ -53,17 +59,53 @@ bind -x '"\C-e": fzf-edit'
 # Insert the selected file on the command line.
 bind -x '"\C-f": fzf-file-widget'
 
-# Fuzzy find in all files from the current working dir, allow multi selection
-# of files with line numbers, open each unique file in a buffer with cursor at
-# the line number of the first selected match.
+fzf-edit-opened() {
+    if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) == true ]]; then
+        preview='git diff --no-prefix -U1000 $@ --color=always -- {-1}'
+        mapfile -t candidates < <(git diff --name-only .)
+    elif [[ -n $(p4 where 2>/dev/null) ]]; then
+        preview='/bin/env P4DIFF="difft --display=inline --color=always -c10" p4 diff -f {}'
+        mapfile -t candidates < <(p4 -ztag opened ... \
+            | awk '/^\.\.\. clientFile/{print $NF}' \
+            | xargs p4 where | awk '{print $NF}')
+    fi
+    if [[ ${#candidates[@]} -gt 0 ]]; then
+        local editfiles
+        mapfile -t editfiles < <(printf '%s\n' "${candidates[@]}" | \
+            fzf $FZF_WIDGET_ARGS -m --no-height --preview "$preview")
+        if [[ ${#editfiles[@]} -gt 0 ]]; then
+            printf -v line '%q ' "${editfiles[@]}"
+            history -s "$VISUAL $line"
+            $VISUAL "${editfiles[@]}"
+        fi
+    fi
+}
+
+bind -x '"\C-o": fzf-edit-opened'
+
 fzf-edit-match() {
-    editfiles=$(rg --line-number --no-heading '' \
-        | fzf -m +s $FZF_WIDGET_ARGS \
-        | awk -F: '{ if (!($1 in seen)) { seen[$1] = $2 } }
-            END { for (i in seen) { print i":"seen[i] } }' )
-    if [[ -n $editfiles ]]; then
-        history -s $VISUAL $editfiles
-        $VISUAL $editfiles
+    # shellcheck disable=SC2016
+    local preview='
+        IFS=: read -r file line rest <<< {}
+        bat --style=numbers --color=always \
+            --highlight-line "$line" \
+            --line-range "$((line > 10 ? line-10 : 1)):$((line+30))" \
+            "$file" 2>/dev/null \
+        || (head -n $((line+30)) "$file" | tail -n +$((line > 10 ? line-10 : 1)))
+    '
+    mapfile -t selected < <(rg --sort path --line-number --no-heading --follow=to-files '' \
+        | fzf --multi --no-sort --exact --reverse $FZF_WIDGET_ARGS --preview "$preview")
+    _ref() { [[ $1 =~ ^([^:]+:[0-9]+): ]] && printf '%s' "${BASH_REMATCH[1]}"; }
+    if [[ ${#selected[@]} -eq 1 ]]; then
+        local ref=$(_ref "${selected[0]}")
+        history -s "$VISUAL $ref"
+        $VISUAL "$ref"
+    elif [[ ${#selected[@]} -gt 1 ]]; then
+        printf '%s\n' "${selected[@]}" > /tmp/nvim-comand-qf
+        local refs=() s
+        for s in "${selected[@]}"; do refs+=("$(_ref "$s")"); done
+        history -s "$VISUAL ${refs[*]}"
+        $VISUAL -- -q /tmp/nvim-comand-qf -c "copen"
     fi
 }
 
@@ -72,41 +114,8 @@ bind -x '"\C-g": fzf-edit-match'
 # Fuzzy find in all directory paths for the current source tree.
 fzf-cd-path() {
     if [[ -n ${SRCDIR+x} ]]; then
-        sel=$( cd $SRCDIR && fd --type d | fzf $FZF_WIDGET_ARGS )
+        sel=$( cd $SRCDIR && fd -td | fzf $FZF_WIDGET_ARGS )
         [[ -n $sel ]] && eval "cd $SRCDIR/$sel ; echo $SRCDIR/$sel"
     fi
 }
 bind -x '"\C-p": fzf-cd-path'
-
-egrok() {
-    grok --color=always "$@" \
-        | fzf --ansi -m +s $FZF_WIDGET_ARGS \
-        | awk -v root=$SRCDIR -F: '{ if (!($1 in seen)) { seen[$1] = $2 } }
-            END { for (i in seen) { print root"/"i":"seen[i] } }' \
-        | xargs -r $VISUAL
-}
-
-_list_tests() {
-    xmlstarlet sel -t -v "/testspecs/test/@name" testSpecs.xml
-}
-
-__select_tests__() {
-    if [[ -f testSpecs.xml ]]; then
-        _list_tests | fzf $FZF_WIDGET_ARGS $1 | paste -sd "," -
-    fi
-}
-
-fzf-select-tests() {
-    if [[ -f testSpecs.xml ]]; then
-        local selected="$(__select_tests__ --multi)"
-        READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
-        READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
-    fi
-}
-bind -x '"\et": fzf-select-tests'
-
-fzf-run-tests() {
-    local selected=$(__select_tests__ --multi)
-    [[ -n $selected ]] && eval "echo runone -n $selected; runone -n $selected"
-}
-bind -x '"\er": fzf-run-tests'
